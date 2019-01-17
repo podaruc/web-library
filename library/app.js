@@ -6,12 +6,22 @@ const chalk = require('chalk'); // it highlights output based on interest-use "c
 const debug = require('debug')('app'); // in cmd type: set DEBUG=app & node (or NODEMON) app.js; MOVED TO package.json - scripts.
 const morgan = require('morgan'); // logs things related to web traffic to console (use 'combined' or 'tiny' for less information)
 const path = require('path'); // figures out and joins folders and html files to be redered
+const bodyParser = require('body-parser');
+const passport = require('passport');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 
 app.use(morgan('tiny'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(session({ secret: 'library' }));
+
+require('./src/config/passport.js')(app);
 
 app.use(express.static(path.join(__dirname, 'public'))); // using express we use CSS and JS files from our computer and not from CDN (online)
 app.use('/css', express.static(path.join(__dirname, '/node_modules/bootstrap/dist/css'))); // for /css directory, if static files are not found in 'public'(check above) then take them from node modules
@@ -27,9 +37,12 @@ const nav = [
   { link: '/contact', title: 'Contact' }];
 
 const bookRouter = require('./src/routes/bookRoutes')(nav);
+const adminRouter = require('./src/routes/adminRoutes')(nav);
+const authRouter = require('./src/routes/authRouter')(nav);
 
 app.use('/books', bookRouter);
-
+app.use('/admin', adminRouter);
+app.use('/auth', authRouter);
 
 app.get('/', (req, res) => {
   res.render('index.ejs', {
